@@ -1,16 +1,16 @@
-"visit_date","utm_source","utm_medium","utm_campaign","total_cost","visitors_count","leads_count","purchases_count","revenue"
-2023-06-01 10:40:28.000,yandex,cpc,prof-frontend,,1,1,205,237990
-2023-06-01 19:27:00.000,yandex,cpc,freemium,,2,2,205,232766
-2023-06-01 14:39:00.000,yandex,cpc,base-frontend,,1,1,205,201150
-2023-06-01 04:58:00.000,vk,cpc,freemium-frontend,,1,1,205,189210
-2023-06-01 10:44:00.000,yandex,cpc,freemium,,1,1,205,188991
-2023-06-01 14:57:00.000,yandex,cpc,prof-frontend,,1,1,205,180306
-2023-06-01 03:41:00.000,vk,cpc,prof-java,,1,1,205,178800
-2023-06-01 19:39:00.000,yandex,cpc,prof-frontend,,1,1,205,167625
-2023-06-01 11:34:00.000,yandex,cpc,base-python,,1,1,205,160920
-2023-06-20 15:15:04.701,telegram,cpp,base-java,,1,1,205,151192
-2023-06-01 16:43:00.000,yandex,cpc,dod-php,,1,1,205,150255
-2023-06-01 15:46:00.000,yandex,cpc,prof-data-analytics,,1,1,205,144244
-2023-06-01 08:33:02.000,yandex,cpc,prof-python,,1,1,205,134100
-2023-06-01 10:54:00.000,yandex,cpc,freemium,,1,1,205,134100
-2023-06-01 19:10:00.000,yandex,cpc,base-professions-retarget,,1,1,205,134100
+"visit_date","source","medium","campaign","visitors_count","total_cost","leads_count","purchases_count","revenue"
+2023-06-01 10:40:28.000,yandex,cpc,prof-frontend,1,1827336,1,3319,789888810
+2023-06-01 14:57:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,598435614
+2023-06-01 19:39:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,556347375
+2023-06-01 11:24:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,445077900
+2023-06-01 09:20:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,398280000
+2023-06-01 19:14:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,395757560
+2023-06-01 17:47:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,376792794
+2023-06-01 08:39:00.000,yandex,cpc,prof-python,2,2507216,2,2237,338216504
+2023-06-01 08:33:02.000,yandex,cpc,prof-python,1,1253608,1,2237,299981700
+2023-06-01 18:42:00.000,yandex,cpc,prof-python,1,1253608,1,2237,281850815
+2023-06-01 09:47:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,265971384
+2023-06-01 09:03:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,261371250
+2023-06-01 15:54:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,239372918
+2023-06-01 17:43:00.000,yandex,cpc,prof-frontend,1,1827336,1,3319,238659333
+2023-06-01 08:35:20.000,yandex,cpc,prof-python,1,1253608,1,2237,224986275
