@@ -1,44 +1,32 @@
 --2.
-WITH PaidClicks AS (
-  SELECT 
-    visitor_id,
-    visit_date,
-    "source",
-    medium,
-    campaign
-  FROM sessions
-  where medium IN ('cpc', 'cpm', 'cpa', 'youtube', 'cpp', 'tg', 'social')
-),
-LastPaidClicks AS (
-  SELECT 
-    visitor_id,
-    MAX(visit_date) AS last_paid_click_date,
-    "source",
-    medium,
-    campaign
-  FROM PaidClicks
-  GROUP BY visitor_id, "source", medium, campaign
-)
-SELECT 
-  l.visitor_id,
-  l.visit_date,
-  l."source",
-  l.medium,
-  l.campaign,
-  lead.lead_id,
-  lead.created_at,
-  lead.amount,
-  lead.closing_reason,
-  lead.status_id
-FROM leads AS lead
-JOIN sessions AS l
-  ON lead.visitor_id = l.visitor_id
-LEFT JOIN LastPaidClicks AS last_click
-  ON l.visitor_id = last_click.visitor_id AND l.visit_date = last_click.last_paid_click_date
-ORDER BY
-  lead.amount DESC NULLS LAST,
-  l.visit_date ASC,
-  l."source" ASC,
-  l.medium ASC,
-  l.campaign ASC
+with last_visit as (
+    select
+        s.visitor_id,
+        max(s.visit_date) as max_visit_date
+    from sessions as s
+    where s.medium not like 'organic'
+    group by 1)
+select
+    lv.visitor_id,
+    lv.max_visit_date as visit_date,
+    s.source as utm_source,
+    s.medium as utm_medium,
+    s.campaign as utm_campaign,
+    l.lead_id,
+    l.created_at,
+    l.amount,
+    l.closing_reason,
+    l.status_id
+from last_visit as lv
+left join sessions as s
+    on lv.visitor_id = s.visitor_id and lv.max_visit_date = s.visit_date
+left join leads as l
+    on lv.visitor_id = l.visitor_id
+where s.medium not like 'organic'
+order by
+    amount desc nulls last,
+    visit_date asc,
+    utm_source asc,
+    utm_medium asc,
+    utm_campaign asc
   limit 10;
