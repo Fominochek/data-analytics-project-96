@@ -15,13 +15,15 @@ leads AS (
         s.campaign AS utm_campaign,
         COUNT(DISTINCT lv.visitor_id) AS visitors_count,
         COUNT(l.lead_id) AS leads_count,
-        COUNT(CASE WHEN l.status_id = 142 OR l.closing_reason = 'Успешно реализовано' THEN lv.visitor_id END) AS purchases_count,
+        COUNT(CASE WHEN l.status_id = 142 OR l.closing_reason = 'Успешно реализовано' 
+  THEN lv.visitor_id END) AS purchases_count,
         SUM(amount) AS revenue
     FROM lv
     INNER JOIN sessions AS s
         ON lv.visitor_id = s.visitor_id AND lv.max_visit_date = s.visit_date
     LEFT JOIN leads AS l
-        ON s.visitor_id = l.visitor_id
+        ON s.visitor_id = l.visitor_id 
+        AND l.created_at >= lv.max_visit_date
     GROUP BY 1, 2, 3, 4
 ),
 ads AS (
