@@ -4,7 +4,7 @@ WITH lv AS (
         MAX(visit_date) AS max_visit_date,
         visitor_id
     FROM sessions
-    WHERE medium <> 'organic'
+    WHERE medium != 'organic'
     GROUP BY visitor_id
 ),
 leads AS (
@@ -32,16 +32,11 @@ ads AS (
         utm_medium,
         utm_campaign,
         SUM(daily_spent) AS total_cost
-    FROM vk_ads
-    GROUP BY campaign_date, utm_source, utm_medium, utm_campaign
-    UNION ALL
-    SELECT
-        DATE(campaign_date) AS campaign_date,
-        utm_source,
-        utm_medium,
-        utm_campaign,
-        SUM(daily_spent) AS total_cost
-    FROM ya_ads
+    FROM (
+        SELECT * FROM vk_ads
+        UNION ALL
+        SELECT * FROM ya_ads
+    ) AS ads
     GROUP BY campaign_date, utm_source, utm_medium, utm_campaign
 )
 SELECT
@@ -60,6 +55,6 @@ LEFT JOIN ads AS a
     AND l.utm_medium = a.utm_medium
     AND l.utm_campaign = a.utm_campaign
     AND l.visit_date = a.campaign_date
-ORDER BY revenue DESC NULLS LAST, visit_date ASC, visitors_count DESC, 
-utm_source ASC, utm_medium ASC, utm_campaign ASC
+ORDER BY l.revenue DESC NULLS LAST, l.visit_date ASC, l.visitors_count DESC, 
+l.utm_source ASC, l.utm_medium ASC, l.utm_campaign ASC
 LIMIT 15;
