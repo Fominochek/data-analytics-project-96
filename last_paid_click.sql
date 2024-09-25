@@ -25,6 +25,8 @@ left join sessions as s
 left join leads as l
     on lv.visitor_id = l.visitor_id
 where s.medium not like 'organic'
-order by l.amount desc nulls last, lv.visit_date asc, s.source asc, 
+order by 
+    l.amount desc nulls last,
+    lv.visit_date asc, s.source asc,
     s.medium asc, s.campaign asc
 limit 10;

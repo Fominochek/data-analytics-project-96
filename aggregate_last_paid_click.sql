@@ -60,10 +60,9 @@ SELECT
     l.revenue
 FROM leads AS l
 LEFT JOIN ads AS a
-        ON l.utm_source = a.utm_source
-        AND l.utm_medium = a.utm_medium
-        AND l.utm_campaign = a.utm_campaign
-        AND l.visit_date = a.campaign_date
+    ON 
+        l.utm_source = a.utm_source AND l.utm_medium = a.utm_medium
+        AND l.utm_campaign = a.utm_campaign AND l.visit_date = a.campaign_date
 ORDER BY
     l.revenue DESC NULLS LAST, l.visit_date ASC,
     l.visitors_count DESC, l.utm_source ASC,
