@@ -1,11 +1,11 @@
 -- 1. Общее количество пользователей
 WITH sessions_by_date AS (
     SELECT
-	source,
+        source,
         DATE(visit_date) AS visit_date,
         COUNT(DISTINCT visitor_id) AS visitors_count
     FROM sessions
-    GROUP BY 1, 2
+    GROUP BY source, DATE(visit_date)
 )
 
 SELECT 
@@ -24,6 +24,7 @@ WITH sessions_by_source_date AS (
     FROM sessions
     GROUP BY source, DATE(visit_date)
 )
+
 SELECT
     visit_date,
     source,
@@ -33,11 +34,7 @@ WHERE source NOT LIKE 'organic'
 GROUP BY visit_date, source, visitors_count
 ORDER BY visit_date, source;
 
--- 3. Общее количество лидов
-SELECT COUNT(DISTINCT lead_id) AS leads_count
-FROM leads;
-
--- 4. Конверсия из клика в лид
+-- 3. Конверсия из клика в лид
 WITH sessions_leads AS (
     SELECT
         s.source AS utm_source,
@@ -49,7 +46,7 @@ WITH sessions_leads AS (
     FROM sessions AS s
     LEFT JOIN leads AS l
         ON s.visitor_id = l.visitor_id
-    GROUP BY 1, 2, 3, 4
+    GROUP BY visit_date, s.sorce, s.medium, s.campaign
 )
 
 SELECT
@@ -64,7 +61,7 @@ SELECT
 FROM sessions_leads
 ORDER BY visit_date, utm_source, utm_medium, utm_campaign;
 
--- 5. Конверсия из лида в оплату
+-- 4. Конверсия из лида в оплату
 WITH leads_purchases AS (
     SELECT
         DATE(created_at) AS created_date,
@@ -73,7 +70,7 @@ WITH leads_purchases AS (
 	closing_reason = 'Успешно реализовано' THEN lead_id END)
 	AS purchases_count
     FROM leads
-    GROUP BY 1
+    GROUP BY DATE(created_at)
 )
 
 SELECT
@@ -85,21 +82,21 @@ SELECT
 FROM leads_purchases
 ORDER BY created_date;
 
--- 6. Затраты по каналам
+-- 5. Затраты по каналам
 WITH ads_by_source_date AS (
     SELECT
-        DATE(campaign_date) AS campaign_date,
         utm_source,
+        DATE(campaign_date) AS campaign_date,
         SUM(daily_spent) AS total_cost
     FROM vk_ads
-    GROUP BY 1, 2
+    GROUP BY utm_source, DATE(campaign_date)
     UNION ALL
     SELECT
-        DATE(campaign_date) AS campaign_date,
         utm_source,
+        DATE(campaign_date) AS campaign_date,
         SUM(daily_spent) AS total_cost
     FROM ya_ads
-    GROUP BY 1, 2
+    GROUP BY utm_source, DATE(campaign_date)
 )
 
 SELECT
@@ -109,113 +106,72 @@ SELECT
 FROM ads_by_source_date
 ORDER BY campaign_date, utm_source;
 
--- 7. Окупаемость каналов
-WITH channel_metrics AS (
+-- 6. Для расчета основных метрик (расчет производила в таблицах)
+WITH lv AS (
     SELECT
-        DATE(s.visit_date) AS visit_date,
-        s.source,
-        COUNT(DISTINCT s.visitor_id) AS visitors_count,
-        SUM(l.amount) AS revenue,
-        SUM(a.daily_spent) AS total_cost,
-        COUNT(DISTINCT l.lead_id) AS leads_count,
-        COUNT(CASE WHEN l.status_id = 142 
-        OR l.closing_reason = 'Успешно реализовано' 
-	THEN l.lead_id END) 
-	AS purchases_count
-    FROM sessions AS s
+        visitor_id,
+        MAX(visit_date) AS max_visit_date
+    FROM sessions
+    WHERE medium != 'organic'
+    GROUP BY visitor_id
+),
+
+leads AS (
+    SELECT
+        s.source AS utm_source,
+        s.medium AS utm_medium,
+        s.campaign AS utm_campaign,
+        DATE(lv.max_visit_date) AS visit_date,
+        COUNT(DISTINCT lv.visitor_id) AS visitors_count,
+        COUNT(l.lead_id) AS leads_count,
+        COUNT(CASE
+            WHEN
+                l.status_id = 142
+                OR l.closing_reason = 'Успешно реализовано'
+                THEN lv.visitor_id
+        END) AS purchases_count,
+        SUM(l.amount) AS revenue
+    FROM lv
+    INNER JOIN sessions AS s
+        ON lv.visitor_id = s.visitor_id AND lv.max_visit_date = s.visit_date
     LEFT JOIN leads AS l
-        ON s.visitor_id = l.visitor_id
-    LEFT JOIN (
-        SELECT
-            DATE(campaign_date) AS campaign_date,
-            utm_source,
-            SUM(daily_spent) AS daily_spent
+        ON s.visitor_id = l.visitor_id AND l.created_at >= lv.max_visit_date
+    GROUP BY visit_date, utm_source, utm_medium, utm_campaign
+),
+
+ads AS (
+    SELECT
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        DATE(campaign_date) AS campaign_date,
+        SUM(daily_spent) AS total_cost
+    FROM (
+        SELECT *
         FROM vk_ads
-        GROUP BY 1, 2
         UNION ALL
-        SELECT
-            DATE(campaign_date) AS campaign_date,
-            utm_source,
-            SUM(daily_spent) AS daily_spent
+        SELECT *
         FROM ya_ads
-        GROUP BY 1, 2
-    ) AS a
-        ON s.source = a.utm_source 
-	AND DATE(s.visit_date) = a.campaign_date
-    GROUP BY 1, 2
+    ) AS ads
+    GROUP BY campaign_date, utm_source, utm_medium, utm_campaign
 )
 
 SELECT
-    visit_date,
-    source,
-    visitors_count,
-    revenue,
-    total_cost,
-    ROUND(total_cost / visitors_count, 2) AS cpu,
-    CASE WHEN leads_count = 0 THEN NULL ELSE ROUND(total_cost/leads_count, 2) 
-    END AS cpl,
-    CASE WHEN purchases_count = 0 THEN NULL 
-    ELSE ROUND(total_cost/purchases_count, 2) END AS cppu,
-    CASE WHEN total_cost = 0 THEN NULL 
-    ELSE ROUND((revenue - total_cost) / total_cost * 100, 2) END AS roi
-FROM channel_metrics
-ORDER BY visit_date, roi DESC NULLS LAST;
-
--- 8. Сводная таблица по source, medium, campaign
-WITH channel_metrics AS (
-    SELECT
-        DATE(s.visit_date) AS visit_date,
-        s.source,
-        s.medium,
-        s.campaign,
-        COUNT(DISTINCT s.visitor_id) AS visitors_count,
-        COUNT(DISTINCT l.lead_id) AS leads_count,
-        SUM(l.amount) AS revenue,
-        SUM(a.daily_spent) AS total_cost,
-        COUNT(CASE WHEN l.status_id = 142 OR l.closing_reason = 'Успешно реализовано' 
-	THEN l.lead_id END) AS purchases_count
-    FROM sessions AS s
-    LEFT JOIN leads AS l
-        ON s.visitor_id = l.visitor_id
-    LEFT JOIN (
-        SELECT
-            DATE(campaign_date) AS campaign_date,
-            utm_source,
-            utm_medium,
-            utm_campaign,
-            SUM(daily_spent) AS daily_spent
-        FROM vk_ads
-        GROUP BY 1, 2, 3, 4
-        UNION ALL
-        SELECT
-            DATE(campaign_date) AS campaign_date,
-            utm_source,
-            utm_medium,
-            utm_campaign,
-            SUM(daily_spent) AS daily_spent
-        FROM ya_ads
-        GROUP BY 1, 2, 3, 4
-    ) AS a
-        ON s.source = a.utm_source AND s.medium = a.utm_medium
-	AND s.campaign = a.utm_campaign
-	AND DATE(s.visit_date) = a.campaign_date
-    GROUP BY 1, 2, 3, 4
-)
-
-SELECT
-    source,
-    medium,
-    campaign,
-    SUM(visitors_count) AS total_visitors,
-    SUM(revenue) AS total_revenue,
-    SUM(total_cost) AS total_cost,
-    ROUND(SUM(total_cost) / SUM(visitors_count), 2) AS cpu,
-    CASE WHEN SUM(leads_count) = 0 THEN NULL ELSE
-	ROUND(SUM(total_cost) / SUM(leads_count), 2) END AS cpl,
-    CASE WHEN SUM(purchases_count) = 0 THEN NULL ELSE
-	ROUND(SUM(total_cost) / SUM(purchases_count), 2) END AS cppu,
-    CASE WHEN SUM(total_cost) = 0 THEN NULL ELSE
-	ROUND((SUM(revenue) - SUM(total_cost)) / SUM(total_cost) * 100, 2) END AS roi
-FROM channel_metrics
-GROUP BY 1, 2, 3
-ORDER BY total_revenue DESC NULLS LAST;
+    l.visit_date,
+    l.visitors_count,
+    l.utm_source,
+    l.utm_medium,
+    l.utm_campaign,
+    a.total_cost,
+    l.leads_count,
+    l.purchases_count,
+    l.revenue
+FROM leads AS l
+LEFT JOIN ads AS a
+    ON
+        l.utm_source = a.utm_source AND l.utm_medium = a.utm_medium
+        AND l.utm_campaign = a.utm_campaign AND l.visit_date = a.campaign_date
+ORDER BY
+    l.revenue DESC NULLS LAST, l.visit_date ASC,
+    l.visitors_count DESC, l.utm_source ASC,
+    l.utm_medium ASC, l.utm_campaign ASC;
