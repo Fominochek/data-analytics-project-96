@@ -5,7 +5,7 @@ with last_visit as (
         max(s.visit_date) as max_visit_date
     from sessions as s
     where s.medium not like 'organic'
-    group by 1
+    group by s.visitor_id
 )
 
 select
@@ -25,6 +25,7 @@ left join sessions as s
 left join leads as l
     on lv.visitor_id = l.visitor_id
 where s.medium not like 'organic'
-order by l.amount desc nulls last, lv.visit_date asc, s.source asc,
-    s.medium asc, s.campaign asc
+order by
+    l.amount desc nulls last, lv.max_visit_date asc,
+    s.source asc, s.medium asc, s.campaign asc
 limit 10;

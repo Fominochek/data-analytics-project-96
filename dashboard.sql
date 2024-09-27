@@ -8,10 +8,10 @@ WITH sessions_by_date AS (
     GROUP BY source, DATE(visit_date)
 )
 
-SELECT 
-    source
+SELECT
+    sessions_by_date.source,
     visit_date,
-    sessions_by_date.visitors_count
+    visitors_count
 FROM sessions_by_date
 ORDER BY visit_date;
 
@@ -57,7 +57,7 @@ SELECT
     visitors_count,
     leads_count,
     ROUND(CAST(leads_count AS DECIMAL) / visitors_count * 100, 2)
-	AS click_to_lead_conversion
+    AS click_to_lead_conversion
 FROM sessions_leads
 ORDER BY visit_date, utm_source, utm_medium, utm_campaign;
 
@@ -66,9 +66,12 @@ WITH leads_purchases AS (
     SELECT
         DATE(created_at) AS created_date,
         COUNT(DISTINCT lead_id) AS leads_count,
-        COUNT(CASE WHEN status_id = 142 OR
-	closing_reason = 'Успешно реализовано' THEN lead_id END)
-	AS purchases_count
+        COUNT(CASE
+            WHEN
+                l.status_id = 142
+                OR l.closing_reason = 'Успешно реализовано'
+                THEN lv.visitor_id
+        END) AS purchases_count,
     FROM leads
     GROUP BY DATE(created_at)
 )
@@ -77,8 +80,8 @@ SELECT
     created_date,
     leads_count,
     purchases_count,
-    ROUND(CAST(purchases_count AS DECIMAL)/leads_count * 100, 2)
-	AS lead_to_purchase_conversion
+    ROUND(CAST(purchases_count AS DECIMAL) / leads_count * 100, 2)
+    AS lead_to_purchase_conversion
 FROM leads_purchases
 ORDER BY created_date;
 
