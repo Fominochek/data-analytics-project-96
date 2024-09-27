@@ -73,7 +73,7 @@ WITH leads_purchases AS (
                 THEN leads.visitor_id
         END) AS purchases_count
     FROM leads
-    GROUP BY DATE(leadscreated_at)
+    GROUP BY DATE(leads.created_at)
 )
 
 SELECT
