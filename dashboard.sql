@@ -10,10 +10,10 @@ WITH sessions_by_date AS (
 
 SELECT
     sessions_by_date.source,
-    visit_date,
-    visitors_count
+    sessions_by_date.visit_date,
+    sessions_by_date.visitors_count
 FROM sessions_by_date
-ORDER BY visit_date;
+ORDER BY sessions_by_date.visit_date;
 
 -- 2. Каналы привлечения пользователей по дням
 WITH sessions_by_source_date AS (
@@ -64,16 +64,16 @@ ORDER BY visit_date, utm_source, utm_medium, utm_campaign;
 -- 4. Конверсия из лида в оплату
 WITH leads_purchases AS (
     SELECT
-        DATE(created_at) AS created_date,
-        COUNT(DISTINCT lead_id) AS leads_count,
+        DATE(leads.created_at) AS created_date,
+        COUNT(DISTINCT leads.lead_id) AS leads_count,
         COUNT(CASE
             WHEN
-                l.status_id = 142
-                OR l.closing_reason = 'Успешно реализовано'
-                THEN lv.visitor_id
-        END) AS purchases_count,
+                leads.status_id = 142
+                OR leads.closing_reason = 'Успешно реализовано'
+                THEN leads.visitor_id
+        END) AS purchases_count
     FROM leads
-    GROUP BY DATE(created_at)
+    GROUP BY DATE(leadscreated_at)
 )
 
 SELECT
